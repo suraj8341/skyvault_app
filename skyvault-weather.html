@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skyvault — Weather Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0e1a; --surface: #111827; --surface2: #1a2235;
+      --border: rgba(255,255,255,0.07); --accent: #38bdf8; --accent2: #818cf8;
+      --warm: #fb923c; --text: #e2e8f0; --muted: #64748b; --card-radius: 20px;
+    }
+    body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; position: relative; }
+    body::before { content: ''; position: fixed; top: -200px; left: -200px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(56,189,248,0.08) 0%, transparent 70%); pointer-events: none; animation: drift 12s ease-in-out infinite alternate; }
+    body::after { content: ''; position: fixed; bottom: -150px; right: -150px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(129,140,248,0.08) 0%, transparent 70%); pointer-events: none; animation: drift 15s ease-in-out infinite alternate-reverse; }
+    @keyframes drift { from { transform: translate(0,0); } to { transform: translate(40px, 30px); } }
+    .app { max-width: 1100px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 1; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; animation: fadeUp 0.6s ease both; }
+    .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .tagline { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+    .search-bar { display: flex; gap: 10px; margin-bottom: 20px; animation: fadeUp 0.6s 0.1s ease both; }
+    .search-bar input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 20px; font-family: 'Syne', sans-serif; font-size: 1rem; color: var(--text); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+    .search-bar input::placeholder { color: var(--muted); }
+    .search-bar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,0.12); }
+    .search-bar button { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0a0e1a; border: none; border-radius: 14px; padding: 14px 28px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: opacity 0.2s, transform 0.15s; white-space: nowrap; }
+    .search-bar button:hover { opacity: 0.88; transform: translateY(-1px); }
+    .api-note { background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.2); border-radius: 14px; padding: 16px 20px; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--warm); margin-bottom: 20px; animation: fadeUp 0.6s 0.15s ease both; line-height: 1.6; }
+    .api-note strong { display: block; margin-bottom: 4px; font-size: 0.8rem; }
+    .main-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 36px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; animation: fadeUp 0.6s 0.2s ease both; position: relative; overflow: hidden; }
+    .main-card::before { content: ''; position: absolute; top: 0; right: 0; width: 300px; height: 300px; background: radial-gradient(circle at top right, rgba(56,189,248,0.05), transparent 70%); pointer-events: none; }
+    .city-name { font-size: 2rem; font-weight: 800; letter-spacing: -1px; }
+    .city-country { font-family: 'DM Mono', monospace; color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+    .temp-display { font-size: 5rem; font-weight: 800; line-height: 1; letter-spacing: -3px; }
+    .temp-display span { font-size: 2rem; color: var(--muted); font-weight: 400; }
+    .weather-desc { font-size: 1.1rem; color: var(--accent); text-transform: capitalize; margin-top: 8px; font-weight: 600; }
+    .feels-like { font-family: 'DM Mono', monospace; color: var(--muted); font-size: 0.78rem; margin-top: 6px; }
+    .weather-icon { font-size: 6rem; line-height: 1; filter: drop-shadow(0 0 20px rgba(56,189,248,0.3)); animation: floatIcon 4s ease-in-out infinite; }
+    @keyframes floatIcon { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; animation: fadeUp 0.6s 0.3s ease both; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 22px 20px; transition: border-color 0.2s, transform 0.2s; }
+    .stat-card:hover { border-color: rgba(56,189,248,0.3); transform: translateY(-2px); }
+    .stat-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; }
+    .stat-icon { font-size: 1.4rem; margin-bottom: 8px; }
+    .forecast-section { animation: fadeUp 0.6s 0.4s ease both; }
+    .section-title { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
+    .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .forecast-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 12px; text-align: center; transition: border-color 0.2s, background 0.2s; }
+    .forecast-card:hover { border-color: rgba(129,140,248,0.4); background: var(--surface2); }
+    .forecast-day { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-bottom: 10px; }
+    .forecast-icon { font-size: 2rem; margin-bottom: 10px; }
+    .forecast-temp { font-size: 1.2rem; font-weight: 700; }
+    .forecast-low { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+    .status-msg { text-align: center; padding: 60px 20px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.85rem; animation: fadeUp 0.5s ease both; }
+    .status-msg .big { font-size: 3rem; display: block; margin-bottom: 14px; }
+    .error-msg { color: #f87171; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .forecast-grid { grid-template-columns: repeat(3, 1fr); } .main-card { grid-template-columns: 1fr; } .temp-display { font-size: 3.5rem; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="logo">⛅ Skyvault</div>
+      <div class="tagline">// real-time weather dashboard</div>
+    </div>
+  </header>
+  <div class="search-bar">
+    <input type="text" id="cityInput" placeholder="Search any city… e.g. Tokyo, London, Cairo" />
+    <button onclick="fetchWeather()">Search</button>
+  </div>
+  <div class="api-note">
+    <strong>🔑 Setup Required</strong>
+    Get a free API key at <u>openweathermap.org</u> and replace <code>YOUR_API_KEY</code> in the JS. Currently showing <strong>demo data</strong>.
+  </div>
+  <div id="weatherDisplay"></div>
+</div>
+<script>
+  const API_KEY = 'YOUR_API_KEY';
+  const weatherIcons = { clear:'☀️', clouds:'☁️', rain:'🌧️', drizzle:'🌦️', thunderstorm:'⛈️', snow:'❄️', mist:'🌫️', fog:'🌫️', haze:'🌫️', default:'🌡️' };
+  const forecastDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function getIcon(c) { c = c.toLowerCase(); for (const [k,v] of Object.entries(weatherIcons)) { if(c.includes(k)) return v; } return weatherIcons.default; }
+  function getDemoData(city) {
+    const conditions = ['Clear','Clouds','Rain','Drizzle'];
+    const condition = conditions[Math.floor(Math.random()*conditions.length)];
+    const temp = Math.round(15 + Math.random()*20);
+    return { name: city, sys:{country:'DEMO'}, main:{temp, feels_like:temp-2, humidity:Math.round(40+Math.random()*40), pressure:1013}, wind:{speed:+(2+Math.random()*8).toFixed(1)}, visibility:10000, weather:[{main:condition,description:condition.toLowerCase()}],
+      forecast: Array.from({length:5},(_,i)=>({ day:forecastDays[(new Date().getDay()+i+1)%7], icon:getIcon(conditions[Math.floor(Math.random()*conditions.length)]), high:Math.round(temp+Math.random()*6-2), low:Math.round(temp-5+Math.random()*4) }))
+    };
+  }
+  async function fetchWeather() {
+    const city = document.getElementById('cityInput').value.trim();
+    if (!city) return;
+    const display = document.getElementById('weatherDisplay');
+    display.innerHTML = `<div class="status-msg"><span class="big">⏳</span>Fetching weather for <strong>${city}</strong>…</div>`;
+    if (API_KEY === 'YOUR_API_KEY') { setTimeout(() => renderWeather(getDemoData(city)), 700); return; }
+    try {
+      const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`);
+      if (!res.ok) throw new Error('City not found');
+      const data = await res.json();
+      const fRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`);
+      const fData = await fRes.json();
+      const seen = new Set(); const forecast = [];
+      for (const item of fData.list) { const day = forecastDays[new Date(item.dt*1000).getDay()]; if (!seen.has(day) && forecast.length < 5) { seen.add(day); forecast.push({day, icon:getIcon(item.weather[0].main), high:Math.round(item.main.temp_max), low:Math.round(item.main.temp_min)}); } }
+      data.forecast = forecast; renderWeather(data);
+    } catch(err) { display.innerHTML = `<div class="status-msg error-msg"><span class="big">🌩️</span>${err.message}</div>`; }
+  }
+  function renderWeather(d) {
+    const icon = getIcon(d.weather[0].main);
+    const temp = Math.round(d.main.temp);
+    document.getElementById('weatherDisplay').innerHTML = `
+      <div class="main-card">
+        <div>
+          <div class="city-name">${d.name}</div>
+          <div class="city-country">${d.sys.country} · ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+          <div class="temp-display">${temp}<span>°C</span></div>
+          <div class="weather-desc">${d.weather[0].description}</div>
+          <div class="feels-like">Feels like ${Math.round(d.main.feels_like)}°C</div>
+        </div>
+        <div><div class="weather-icon">${icon}</div></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">💧</div><div class="stat-label">Humidity</div><div class="stat-value">${d.main.humidity}<span style="font-size:1rem;color:var(--muted)">%</span></div></div>
+        <div class="stat-card"><div class="stat-icon">💨</div><div class="stat-label">Wind Speed</div><div class="stat-value">${d.wind.speed}<span style="font-size:1rem;color:var(--muted)"> m/s</span></div></div>
+        <div class="stat-card"><div class="stat-icon">🔵</div><div class="stat-label">Pressure</div><div class="stat-value">${d.main.pressure}<span style="font-size:1rem;color:var(--muted)"> hPa</span></div></div>
+        <div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-label">Visibility</div><div class="stat-value">${(d.visibility/1000).toFixed(1)}<span style="font-size:1rem;color:var(--muted)"> km</span></div></div>
+      </div>
+      <div class="forecast-section">
+        <div class="section-title">5-Day Forecast</div>
+        <div class="forecast-grid">${d.forecast.map(f=>`<div class="forecast-card"><div class="forecast-day">${f.day}</div><div class="forecast-icon">${f.icon}</div><div class="forecast-temp">${f.high}°</div><div class="forecast-low">${f.low}° low</div></div>`).join('')}</div>
+      </div>`;
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('cityInput').addEventListener('keydown', e => { if(e.key==='Enter') fetchWeather(); });
+    document.getElementById('cityInput').value = 'London';
+    fetchWeather();
+  });
+</script>
+</body>
+</html>
